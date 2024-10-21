@@ -1,0 +1,29 @@
+name: dsp
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.11
+  - streamlit
+  - plotly
+  - pandas
+  - numpy
+  - google-api-python-client
+  - google-cloud-speech
+  - openai
+  - python-dotenv
+  - requests
+  - yt-dlp
+  - google-cloud-storage
+  - langchain
+  - faiss-cpu
+  - langchain-openai
+  - tiktoken
+  - fpdf
+  - markdown
+  - python-docx
+  - langchain-community
+  - rich
+  - pydantic<2.0
+  - chromadb
+  - isodate

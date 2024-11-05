@@ -98,6 +98,10 @@ class YouTubeIdeaGenerator:
                 }
                 
                 response = requests.get("https://www.googleapis.com/youtube/v3/search", params=params)
+                if response.status_code == 403:
+                    logger.error("YouTube API 요청이 금지되었습니다. API 키 권한을 확인해주세요.")
+                    st.error("YouTube API 요청이 금지되었습니다. API 키 권한을 확인해주세요.")
+                    return []
                 response.raise_for_status()
                 data = response.json()
                 
@@ -111,6 +115,10 @@ class YouTubeIdeaGenerator:
                 }
                 
                 video_response = requests.get("https://www.googleapis.com/youtube/v3/videos", params=video_params)
+                if video_response.status_code == 403:
+                    logger.error("YouTube API 요청이 금지되었습니다. API 키 권한을 확인해주세요.")
+                    st.error("YouTube API 요청이 금지되었습니다. API 키 권한을 확인해주세요.")
+                    return []
                 video_response.raise_for_status()  # API 응답 확인
                 video_data = video_response.json()
                 
@@ -145,10 +153,39 @@ class YouTubeIdeaGenerator:
             
         except requests.exceptions.RequestException as e:
             logger.error(f"YouTube API 요청 중 오류 발생: {str(e)}")
+            st.error(f"YouTube API 요청 중 오류가 발생했습니다: {str(e)}")
             return []
         except Exception as e:
             logger.error(f"비디오 검색 중 오류 발생: {str(e)}")
+            st.error(f"비디오 검색 중 오류가 발생했습니다: {str(e)}")
             return []
+
+    def get_video_transcript(self, video_url: str) -> str:
+        """YouTube 영상의 자막을 추출"""
+        try:
+            ydl_opts = {
+                'skip_download': True,
+                'writesubtitles': True,
+                'subtitleslangs': ['en'],
+                'quiet': True,
+                'outtmpl': '%(id)s.%(ext)s'
+            }
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(video_url, download=False)
+                if 'requested_subtitles' in info and info['requested_subtitles']:
+                    sub_file = list(info['requested_subtitles'].values())[0]['url']
+                    transcript_response = requests.get(sub_file)
+                    transcript_response.raise_for_status()
+                    transcript = transcript_response.text
+                    return self._clean_transcript(transcript)
+                else:
+                    logger.warning(f"영상 '{info['title']}'에 대한 자동 생성 자막을 찾을 수 없습니다.")
+                    return "자막을 찾을 수 없습니다."
+        
+        except Exception as e:
+            logger.error(f"자막 추출 중 오류 발생: {str(e)}")
+            return "자막 추출 중 오류가 발생했습니다."
 
     def generate_ideas(self, content: str, context: Optional[str] = None) -> str:
         """프로젝트 아이디어 생성"""
@@ -206,7 +243,7 @@ class YouTubeIdeaGenerator:
 def main():
     st.set_page_config(
         page_title="YouTube 프로젝트 아이디어 생성기",
-        page_icon="🌟",
+        page_icon=":star:",
         layout="wide"
     )
 
@@ -284,7 +321,7 @@ def main():
         )
         
         # 검색 결과 수
-        max_results = st.slider("검색 결과 수", 3, 10, 5)
+        max_results = st.slider("검색 결과 수", 1, 10, 1)
         
         st.markdown("---")
         st.markdown("""
@@ -297,7 +334,7 @@ def main():
     # 메인 화면
     query = st.text_input(
         "관심 있는 주제나 기술을 검색하세요",
-        placeholder="예: React Native 앱 개발, AI 챗봇, 데이터 분석"
+        placeholder="예: React Native 앱 개발, 아이디어 대회,캡스톤디자인, AI 챗봇, 데이터 분석"
     )
 
     if query:
@@ -340,7 +377,7 @@ def main():
                             transcript = generator.get_video_transcript(video.url)
                             
                             if transcript:
-                                with st.expander("📝 영상 내용", expanded=False):
+                                with st.expander("영상 내용", expanded=False):
                                     st.text_area("자막", transcript, height=200, key=f"transcript_{idx}")
                                 
                                 context = st.text_area(

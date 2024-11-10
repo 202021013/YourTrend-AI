@@ -259,7 +259,7 @@ class YouTubeIdeaGenerator:
                 response = requests.get("https://www.googleapis.com/youtube/v3/search", params=params)
                 if response.status_code == 403:
                     logger.error("YouTube API 요청이 금지되었습니다. API 키 권한을 확인해주세요.")
-                    st.error("YouTube API 요청이 금지되었습니다. API 키 권한을 확인해주세요.")
+                    st.error("YouTube API 요청이 금지되었��니다. API 키 권한을 확인해주세요.")
                     return []
                 response.raise_for_status()
                 data = response.json()
@@ -416,135 +416,179 @@ class YouTubeIdeaGenerator:
         return transcript.strip()
 
 def main():
-    # 페이지 설정
     st.set_page_config(
         page_title="YouTube 프로젝트 아이디어 생성기",
         page_icon=":star:",
         layout="wide"
     )
 
-    # 세션 상태 초기화
-    if 'session_state' not in st.session_state:
-        st.session_state.update({
-            'generated_ideas': {},
-            'selected_video': None,
-            'transcripts': {},
-            'search_results': [],
-            'sort_option': '관련성'
-        })
-
-    # API 키 유효성 검사
-    api_keys = validate_api_keys()
-    if not api_keys:
-        return
-
-    # 아이디어 생성기 초기화 
-    generator = initialize_generator(api_keys)
-    if not generator:
-        return
-
-    # 사이드바 설정
-    search_params = setup_sidebar()
-
-    # 메인 검색 UI
-    query = st.text_input(
-        "관심 있는 주제나 기술을 검색하세요",
-        placeholder="예: React Native 앱 개발, AI 챗봇, 데이터 분석"
-    )
-
-    if query:
-        handle_search(query, generator, search_params)
-
-    # 아이디어 표시 및 관리
-    display_saved_ideas(generator)
-
-def validate_api_keys():
-    """API 키 유효성 검사"""
+    # API 키 확인
     openai_api_key = os.getenv("OPENAI_API_KEY")
     youtube_api_key = os.getenv("YOUTUBE_API_KEY")
     
     if not openai_api_key or not youtube_api_key:
-        st.error("API 키가 없습니다. .env 파일을 확인해주세요.")
-        return None
-    
-    return {'openai': openai_api_key, 'youtube': youtube_api_key}
+        st.error("OpenAI API 키와 YouTube API 키가 필요합니다. .env 파일을 확인해주세요.")
+        return
 
-def initialize_generator(api_keys):
-    """아이디어 생성기 초기화"""
-    try:
-        return YouTubeIdeaGenerator(
-            openai_api_key=api_keys['openai'],
-            youtube_api_key=api_keys['youtube']
-        )
-    except Exception as e:
-        st.error(f"생성기 초기화 실패: {str(e)}")
-        return None
+    # 아이디어 생성기 초기화 - API 키 명시적 전달
+    generator = YouTubeIdeaGenerator(
+        openai_api_key=openai_api_key,
+        youtube_api_key=youtube_api_key
+    )
 
-def setup_sidebar():
-    """사이드바 설정"""
+    # 스타일 적용
+    st.markdown("""
+        <style>
+        .stApp {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .video-container {
+                border: 1px solid #ddd;
+                padding: 1rem;
+                border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        .idea-container {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.title("🌟 YouTube 프로젝트 아이디어 생성기")
+    st.markdown("""
+        YouTube 영상을 통해 프로젝트 아이디어를 얻고 발전시켜보세요.
+        AI 멘토가 실현 가능한 프로젝트 아이디어를 제안해드립니다.
+    """)
+
+    # API 키 확인
+    if not all([os.getenv("OPENAI_API_KEY"), os.getenv("YOUTUBE_API_KEY")]):
+        st.error("OpenAI API 키와 YouTube API 키가 필요합니다. .env 파일을 확인해주세요.")
+        return
+
+    # 아이디어 생성기 초기화
+    generator = YouTubeIdeaGenerator(
+        openai_api_key=os.getenv("OPENAI_API_KEY"),
+        youtube_api_key=os.getenv("YOUTUBE_API_KEY")
+    )
+
+    # 사이드바 설정
     with st.sidebar:
         st.header("🔍 검색 설정")
         
+        # 영상 길이 설정
+        st.subheader("영상 길이")
         duration_range = st.slider(
             "영상 길이 범위(분)",
-            0, 60, (3, 15)
+            min_value=0,
+            max_value=60,
+            value=(3, 4),
+            step=1
         )
         
+        # 정렬 옵션
         sort_by = st.selectbox(
             "정렬 기준",
             ["관련성", "조회수 ↓", "길이 ↓", "최신순 ↓"]
         )
         
-        max_results = st.slider(
-            "검색 결과 수", 
-            1, 10, 5
-        )
+        # 검색 결과 수
+        max_results = st.slider("검색 결과 수", 1, 10, 1)
         
-        display_search_tips()
-        
-        return {
-            'duration': duration_range,
-            'sort': sort_by,
-            'max_results': max_results
-        }
+        st.markdown("---")
+        st.markdown("""
+            ### 💡 팁
+            - 구체적인 기술이나 도메인으로 검색하세요
+            - 실제 프로젝트 예시를 참고하세요
+            - 최신 트렌드를 고려하세요
+        """)
 
-def handle_search(query, generator, params):
-    """검색 실행 및 결과 처리"""
-    with st.spinner("검색 중..."):
-        videos = generator.search_videos(
-            query=query,
-            max_results=params['max_results'],
-            min_duration=params['duration'][0] * 60,
-            max_duration=params['duration'][1] * 60
-        )
-        
+    # 메인 화면
+    query = st.text_input(
+        "관심 있는 주제나 기술을 검색하세요",
+        placeholder="예: React Native 앱 개발, 아이디어 대회,캡스톤디자인, AI 챗봇, 데이터 분석"
+    )
+
+    if query:
+        with st.spinner("영상 검색 중..."):
+            videos = generator.search_videos(
+                query=query,
+                max_results=max_results,
+                min_duration=duration_range[0] * 60,
+                max_duration=duration_range[1] * 60
+            )
+
+            # 정렬 적용
+            if sort_by == "조회수 ↓":
+                videos.sort(key=lambda x: x.views, reverse=True)
+            elif sort_by == "길이 ↓":
+                videos.sort(key=lambda x: x.duration, reverse=True)
+            elif sort_by == "최신순 ↓":
+                videos.sort(key=lambda x: x.published_at, reverse=True)
+
         if videos:
-            display_videos(videos, generator)
-        else:
-            st.warning("검색 결과가 없습니다.")
+            st.subheader("🎥 검색 결과")
+            
+            for idx, video in enumerate(videos):
+                # 비디오 정보를 카드 형태로 표시
+                st.markdown("---")
+                cols = st.columns([2, 1])
+                
+                with cols[0]:
+                    st.image(video.thumbnail_url)
+                    st.markdown(f"### 📺 {video.title}")
+                
+                with cols[1]:
+                    st.markdown(f"**길이:** {video.duration_str}")
+                    st.markdown(f"**조회수:** {video.views:,}회")
+                    st.markdown(f"**게시일:** {video.published_at.strftime('%Y-%m-%d')}")
+                    st.markdown(f"**설명:** {video.description[:300]}...")
+                
+                # 아이디어 생성 섹션
+                if st.button("이 영상으로 아이디어 얻기", key=f"select_video_{idx}"):
+                    with st.spinner("영상 분석 중..."):
+                        transcript = generator.get_video_transcript(video.url)
+                        
+                        if transcript:
+                            st.markdown("### 📝 영상 내용")
+                            st.text_area("자막", transcript, height=200, key=f"transcript_{idx}")
+                            
+                            context = st.text_area(
+                                "추가 컨텍스트나 제약사항을 입력하세요 (선택사항)",
+                                placeholder="예: 초보자를 위한 프로젝트여야 함, Python만 사용, 2주 안에 완료 필요 등",
+                                key=f"context_{idx}"
+                            )
+                            
+                            if st.button("아이디어 생성", key=f"generate_ideas_{idx}"):
+                                with st.spinner("아이디어 생성 중..."):
+                                    ideas = generator.generate_ideas(transcript, context)
+                                    st.session_state[f"ideas_{idx}"] = ideas
+                                    
+                                    st.markdown("### 💡 생성된 아이디어")
+                                    st.markdown(ideas)
+                                    
+                                    if st.button("이 아이디어 저장", key=f"save_ideas_{idx}"):
+                                        generator.idea_manager.save_idea(video.title, ideas)
+                                        st.success("아이디어가 저장되었습니다!")
+                        else:
+                            st.error("자막을 추출할 수 없습니다. 다른 영상을 선택해주세요.")
 
-def display_videos(videos, generator):
-    """비디오 목록 표시"""
-    st.subheader("🎥 검색 결과")
-    
-    for idx, video in enumerate(videos):
-        with st.container():
-            display_video_card(idx, video, generator)
-
-def handle_idea_generation(video, transcript, context, idx, generator):
-    """아이디어 생성 처리"""
-    with st.spinner("아이디어 생성 중..."):
-        ideas = generator.generate_ideas(transcript, context)
-        st.session_state.generated_ideas[idx] = ideas
+    # 저장된 아이디어 표시
+    if "saved_ideas" in st.session_state and st.session_state.saved_ideas:
+        st.sidebar.markdown("---")
+        st.sidebar.header("💾 저장된 아이디어")
         
-        st.markdown("### 💡 생성된 아이디어")
-        st.markdown(ideas)
-        
-        if st.button("아이디어 저장", key=f"save_{idx}"):
-            generator.idea_manager.save_idea(video.title, ideas)
-            st.success("저장 완료!")
-
-# 나머지 유틸리티 함수들...
+        for idx, saved in enumerate(st.session_state.saved_ideas):
+            with st.sidebar.expander(
+                f"📌 {saved['video_title'][:30]}... ({saved['timestamp'].strftime('%Y-%m-%d %H:%M')})"
+            ):
+                st.markdown(saved['ideas'])
+                if st.button("삭제", key=f"delete_saved_idea_{idx}"):
+                    generator.idea_manager.delete_idea(idx)
+                    st.experimental_rerun()
 
 if __name__ == "__main__":
     main()

@@ -289,17 +289,6 @@ def main():
         AI 멘토가 실현 가능한 프로젝트 아이디어를 제안해드립니다.
     """)
 
-    # API 키 확인
-    if not all([os.getenv("OPENAI_API_KEY"), os.getenv("YOUTUBE_API_KEY")]):
-        st.error("OpenAI API 키와 YouTube API 키가 필요합니다. .env 파일을 확인해주세요.")
-        return
-
-    # 아이디어 생성기 초기화
-    generator = YouTubeIdeaGenerator(
-        openai_api_key=os.getenv("OPENAI_API_KEY"),
-        youtube_api_key=os.getenv("YOUTUBE_API_KEY")
-    )
-
     # 사이드바 설정
     with st.sidebar:
         st.header("🔍 검색 설정")
@@ -334,7 +323,7 @@ def main():
     # 메인 화면
     query = st.text_input(
         "관심 있는 주제나 기술을 검색하세요",
-        placeholder="예: React Native 앱 개발, 아이디어 대회,캡스톤디자인, AI 챗봇, 데이터 분석"
+        placeholder="예: React Native 앱 개발, 아이디어 대회, 캡스톤 디자인, AI 챗봇, 데이터 분석"
     )
 
     if query:
@@ -377,8 +366,8 @@ def main():
                             transcript = generator.get_video_transcript(video.url)
                             
                             if transcript:
-                                with st.expander("영상 내용", expanded=False):
-                                    st.text_area("자막", transcript, height=200, key=f"transcript_{idx}")
+                                # 기존의 nested expander를 제거하고 하나의 텍스트 영역으로 대체
+                                st.text_area("영상 내용", transcript, height=200, key=f"transcript_{idx}")
                                 
                                 context = st.text_area(
                                     "추가 컨텍스트나 제약사항을 입력하세요 (선택사항)",

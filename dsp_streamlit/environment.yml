@@ -28,3 +28,5 @@ dependencies:
   - chromadb
   - isodate
   - pydub
+  - openai-whisper
+  - torch>=2.2.0

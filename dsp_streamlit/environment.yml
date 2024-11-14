@@ -28,3 +28,5 @@ dependencies:
   - chromadb
   - isodate
   - pydub
+  - pytube 
+  - openai-whisper

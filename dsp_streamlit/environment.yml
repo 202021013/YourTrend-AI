@@ -8,8 +8,6 @@ dependencies:
   - plotly
   - pandas
   - numpy
-  - google-api-python-client
-  - google-cloud-speech
   - openai
   - python-dotenv
   - requests
@@ -30,3 +28,4 @@ dependencies:
   - pydub
   - pytube 
   - openai-whisper
+  - youtube-search-python

@@ -8,6 +8,8 @@ import os
 from dotenv import load_dotenv
 from pytube import Search, YouTube
 import pandas as pd
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 # .env 파일 로드
 load_dotenv()
@@ -27,10 +29,19 @@ def init_db():
     conn.commit()
     conn.close()
 
+def extract_video_id(url):
+    """YouTube URL에서 비디오 ID 추출"""
+    import re
+    # YouTube URL 패턴에서 video ID 추출
+    pattern = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
+    match = re.search(pattern, url)
+    return match.group(1) if match else None
+
 def get_video_info(video):
     """yt-dlp를 사용하여 비디오 정보를 가져오는 함수"""
     try:
-        url = f"https://youtube.com/watch?v={video.video_id}"
+        video_id = video.video_id
+        url = f"https://youtube.com/watch?v={video_id}"
         ydl_opts = {
             'quiet': True,
             'no_warnings': True,
@@ -43,20 +54,22 @@ def get_video_info(video):
             return {
                 'title': result.get('title', "제목 없음"),
                 'url': url,
-                'thumbnail': result.get('thumbnail', f"https://img.youtube.com/vi/{video.video_id}/maxresdefault.jpg"),
+                'thumbnail': result.get('thumbnail', f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"),
                 'duration': result.get('duration', 0),
                 'view_count': result.get('view_count', 0),
-                'author': result.get('uploader', "작성자 정보 없음")
+                'author': result.get('uploader', "작성자 정보 없음"),
+                'video_id': video_id  # video_id 추가
             }
     except Exception as e:
         st.warning(f"영상 정보를 가져오는 중 오류 발생: {str(e)}")
         return {
             'title': video.title or "제목 없음",
             'url': url,
-            'thumbnail': f"https://img.youtube.com/vi/{video.video_id}/maxresdefault.jpg",
+            'thumbnail': f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg",
             'duration': 0,
             'view_count': 0,
-            'author': video.author or "작성자 정보 없음"
+            'author': video.author or "작성자 정보 없음",
+            'video_id': video_id  # video_id 추가
         }
 def search_videos(keyword, max_results=5):
     """키워드로 유튜브 영상 검색"""
@@ -73,18 +86,24 @@ def search_videos(keyword, max_results=5):
     
 def download_audio(url):
     try:
+        video_id = extract_video_id(url)
+        if not video_id:
+            st.error("유효하지 않은 YouTube URL입니다.")
+            return None
+            
+        output_path = f'temp_audio_{video_id}'
         ydl_opts = {
             'format': 'bestaudio/best',
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
             }],
-            'outtmpl': f'temp_audio_{Path(url).stem}.%(ext)s'
+            'outtmpl': f'{output_path}.%(ext)s'
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
-        return f'temp_audio_{Path(url).stem}.mp3'
+        return f'{output_path}.mp3'
     except Exception as e:
         st.error(f"오디오 다운로드 중 오류 발생: {str(e)}")
         return None
@@ -155,6 +174,40 @@ def format_views(views):
         return f"{views/1000:.1f}K"
     return str(views)
 
+async def process_video_async(video, temp_dir):
+    video_id = video['video_id']
+    audio_path = os.path.join(temp_dir, f"temp_audio_{video_id}.mp3")
+    
+    # 이미 처리된 영상 확인
+    if video_id in st.session_state.processed_videos:
+        return st.session_state.current_transcripts.get(video_id)
+        
+    try:
+        # 오디오 다운로드
+        audio_file = await asyncio.to_thread(download_audio, video['url'])
+        if audio_file and os.path.exists(audio_file):
+            os.rename(audio_file, audio_path)
+            
+            # Whisper 모델 설정 - tiny 모델 사용
+            model = whisper.load_model("tiny")
+            transcript = await asyncio.to_thread(model.transcribe, audio_path)
+            
+            # 결과 저장
+            if transcript and transcript.get("text"):
+                st.session_state.current_transcripts[video_id] = transcript["text"]
+                st.session_state.processed_videos[video_id] = True
+                
+            # 임시 파일 정리
+            try:
+                os.remove(audio_path)
+            except Exception:
+                pass
+                
+            return transcript.get("text")
+    except Exception as e:
+        st.error(f"처리 중 오류 발생: {str(e)}")
+        return None
+
 def main():
     st.set_page_config(page_title="유튜브 프로젝트 아이디어 생성기", layout="wide")
     st.title("유튜브 프로젝트 아이디어 생성기")
@@ -164,6 +217,11 @@ def main():
     
     # OpenAI API 키 설정
     openai.api_key = os.getenv("OPENAI_API_KEY")
+    
+    # 임시 파일들을 저장할 디렉토리 생성
+    temp_dir = "temp_audio_files"
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
     
     # 사이드바 - 저장된 아이디어
     with st.sidebar:
@@ -200,7 +258,7 @@ def main():
                         st.write(f"조회수: {format_views(video['view_count'])}")
                         selected = st.checkbox("선택", key=f"video_{idx}")
                         if selected:
-                            selected_videos.append(video['url'])
+                            selected_videos.append(video)
                     st.write("---")
     
     with col2:
@@ -209,10 +267,16 @@ def main():
                 all_transcripts = []
                 
                 # 선택된 모든 영상 처리
-                for url in selected_videos:
+                for video in selected_videos:
                     # 1. 오디오 다운로드
-                    audio_path = download_audio(url)
-                    if audio_path:
+                    audio_path = os.path.join(temp_dir, f"temp_audio_{video['video_id']}.mp3")
+                    audio_file = download_audio(video['url'])
+                    
+                    if audio_file:
+                        # 안전하게 파일 이동
+                        if os.path.exists(audio_file):
+                            os.rename(audio_file, audio_path)
+                        
                         # 2. 음성을 텍스트로 변환
                         transcript = transcribe_audio(audio_path)
                         if transcript:
@@ -224,6 +288,14 @@ def main():
                         except Exception as e:
                             st.warning(f"임시 파일 삭제 중 오류 발생: {str(e)}")
                 
+                # 임시 디렉토리 정리
+                for file in os.listdir(temp_dir):
+                    if file.startswith("temp_audio_"):
+                        try:
+                            os.remove(os.path.join(temp_dir, file))
+                        except Exception as e:
+                            st.warning(f"임시 파일 삭제 중 오류 발생: {str(e)}")
+                
                 if all_transcripts:
                     # 모든 트랜스크립트 표시
                     st.subheader("영상 내용")
@@ -232,18 +304,44 @@ def main():
                             st.write(transcript)
                     
                     # 3. 프로젝트 아이디어 생성
-                    combined_transcript = "\n".join(all_transcripts)
                     idea = generate_idea(all_transcripts)
                     if idea:
                         st.subheader("생성된 아이디어")
                         st.write(idea)
                         
                         # 4. 아이디어 저장
-                        save_idea(selected_videos, combined_transcript, idea)
+                        save_idea([v['url'] for v in selected_videos], "\n".join(all_transcripts), idea)
                         
                         st.success("아이디어가 생성되고 저장되었습니다!")
                 else:
                     st.error("선택한 영상에서 텍스트를 추출할 수 없습니다.")
+
+    # 비동기 처리를 위한 이벤트 루프 설정
+    if 'loop' not in st.session_state:
+        st.session_state.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(st.session_state.loop)
+
+    if st.button("선택한 영상으로 아이디어 생성") and st.session_state.selected_videos:
+        with st.spinner("영상 처리 중..."):
+            # 비동기 처리 실행
+            tasks = [
+                process_video_async(video, temp_dir)
+                for video in st.session_state.selected_videos
+            ]
+            
+            # 병렬 처리 실행
+            transcripts = st.session_state.loop.run_until_complete(
+                asyncio.gather(*tasks)
+            )
+            
+            # 결과 처리
+            valid_transcripts = [t for t in transcripts if t]
+            if valid_transcripts:
+                idea = generate_idea(valid_transcripts)
+                if idea:
+                    st.write(idea)
+                    save_idea([v['url'] for v in st.session_state.selected_videos], 
+                            "\n".join(valid_transcripts), idea)
 
 if __name__ == "__main__":
     main()

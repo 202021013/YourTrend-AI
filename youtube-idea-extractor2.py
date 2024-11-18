@@ -19,7 +19,7 @@ class Config:
     OUTPUT_DIR = "downloads"
     AUDIO_FORMAT = "mp3"
     GPT_MODEL = "gpt-4"  # GPT-4로 변경하여 더 높은 품질의 분석 가능
-    MAX_TOKENS = 1000    # 응답 길이 제한
+    MAX_TOKENS = 2000    # 응답 길이 제한
     TEMPERATURE = 0.7    # 창의성 조절 (0: 보수적, 1: 창의적)
 
 class YouTubeIdeaExtractor:

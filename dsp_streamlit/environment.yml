@@ -32,3 +32,5 @@ dependencies:
   - matplotlib      
   - Pillow
   - opencv-python
+  - transformers
+  - sentence-transformers

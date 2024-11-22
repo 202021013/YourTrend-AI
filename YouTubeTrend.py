@@ -29,7 +29,7 @@ class YouTubeTrendAnalyzer:
         print(f"사용 디바이스: {self.device}")
         
         # 비전 모델 초기화
-        print("���전 모델 로딩 중...")
+        print("비전 모델 로딩 중...")
         self.vision_model = VisionEncoderDecoderModel.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
         self.image_processor = ViTImageProcessor.from_pretrained("nlpconnect/vit-gpt2-image-captioning")
         self.tokenizer = AutoTokenizer.from_pretrained("nlpconnect/vit-gpt2-image-captioning")

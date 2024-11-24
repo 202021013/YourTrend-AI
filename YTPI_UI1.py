@@ -142,7 +142,7 @@ def parse_duration(duration_text):
     except:
         return 0
 
-def search_videos(keyword, duration_category):
+def search_videos(keyword, duration_category, sort_by='relevance'):
     videos_search = VideosSearch(keyword, limit=10)
     results = videos_search.result()
     videos = []
@@ -164,6 +164,8 @@ def search_videos(keyword, duration_category):
         elif duration_category == 'very_long' and video_duration_sec > 3600:
             duration_included = True
         if duration_included:
+            view_count = safe_int_conversion(video['viewCount']['text'])
+            publish_time = video.get('publishedTime', '')
             videos.append({
                 'video_id': video['id'],
                 'title': video['title'],
@@ -171,10 +173,19 @@ def search_videos(keyword, duration_category):
                 'duration': video['duration'],
                 'duration_seconds': video_duration_sec,
                 'view_count': video['viewCount']['text'],
+                'view_count_num': view_count,
+                'publish_time': publish_time,
                 'thumbnail': video['thumbnails'][0]['url'],
                 'url': video['link']
             })
-    return pd.DataFrame(videos)
+    df = pd.DataFrame(videos)
+    if sort_by == 'views':
+        df = df.sort_values('view_count_num', ascending=False)
+    elif sort_by == 'date':
+        df['publish_datetime'] = pd.to_datetime(df['publish_time'], errors='coerce')
+        df = df.sort_values('publish_datetime', ascending=False)
+        df = df.drop('publish_datetime', axis=1)
+    return df
 
 def download_audio(url):
     try:
@@ -461,7 +472,7 @@ def main():
     with st.container():
         st.header("🔍 영상 검색")
         with st.form(key='search_form'):
-            col1, col2 = st.columns([3, 1])
+            col1, col2, col3 = st.columns([3, 1, 1])
             with col1:
                 search_keyword = st.text_input(
                     "검색어 입력",
@@ -481,11 +492,21 @@ def main():
                         'very_long': '60분 이상'
                     }[x]
                 )
+            with col3:
+                sort_option = st.selectbox(
+                    "정렬 기준",
+                    options=['relevance', 'date', 'views'],
+                    format_func=lambda x: {
+                        'relevance': '관련도순',
+                        'date': '최신순',
+                        'views': '조회수순'
+                    }[x]
+                )
             search_submitted = st.form_submit_button("검색하기", use_container_width=True)
 
         if search_submitted and search_keyword:
             with st.spinner('🔍 영상을 검색하고 있습니다...'):
-                st.session_state.search_results = search_videos(search_keyword, duration_option)
+                st.session_state.search_results = search_videos(search_keyword, duration_option, sort_option)
                 st.session_state.search_performed = True
 
         if st.session_state.search_performed and st.session_state.search_results is not None:

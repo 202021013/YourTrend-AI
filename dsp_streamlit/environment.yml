@@ -34,3 +34,5 @@ dependencies:
   - opencv-python
   - transformers
   - sentence-transformers
+  - requests
+  - BeautifulSoup4

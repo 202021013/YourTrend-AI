@@ -9,9 +9,10 @@ import os
 load_dotenv()
 
 class AIAgent:
-    def __init__(self, name: str, role: str):
+    def __init__(self, name: str, role: str, temperature: float):
         self.name = name
         self.role = role
+        self.temperature = temperature
         self.client = OpenAI()  # API 키는 환경변수에서 자동으로 로드됨
         self.conversation_history: List[Dict] = []
         
@@ -33,8 +34,8 @@ class AIAgent:
             response = self.client.chat.completions.create(
                 model="gpt-4",
                 messages=messages,
-                max_tokens=1000,
-                temperature=0.7
+                max_tokens=200,
+                temperature=self.temperature  # 각 에이전트별 temperature 사용
             )
             
             generated_response = response.choices[0].message.content.strip()
@@ -45,10 +46,18 @@ class AIAgent:
         except Exception as e:
             return f"Error generating response: {str(e)}"
 
-def generate_innovative_conclusion(topic: str, conversation_history: List[str]) -> str:
+def generate_innovative_conclusion(topic: str, conversation_history: List[str], custom_prompt: str) -> str:
     client = OpenAI()
     
     conversation_text = "\n".join(f"발언 {idx}: {msg}" for idx, msg in enumerate(conversation_history, 1))
+    
+    # 사용자 정의 프롬프트가 있으면 그것을 사용하고, 없으면 기본 프롬프트 사용
+    system_prompt = custom_prompt if custom_prompt else """당신은 혁신적인 아이디어를 도출하는 전문가입니다.
+        분석가와 실무자의 대화를 종합하�� 다음과 같은 결과물을 도출해주세요:
+        1. 대화에서 발견된 핵심 인사이트 (2-3줄)
+        2. 이를 바탕으로 한 혁신적인 아이디어 제안 (3-4개)
+        3. 실현 가능한 실행 방안 (2-3줄)
+        아이디어는 구체적이고 실현 가능하면서도 창의적이어야 합니다."""
     
     prompt = (
         f"주제: {topic}\n"
@@ -57,12 +66,7 @@ def generate_innovative_conclusion(topic: str, conversation_history: List[str]) 
     )
     
     messages = [
-        {"role": "system", "content": """당신은 혁신적인 아이디어를 도출하는 전문가입니다.
-        분석가와 실무자의 대화를 종합하여 다음과 같은 결과물을 도출해주세요:
-        1. 대화에서 발견된 핵심 인사이트 (2-3줄)
-        2. 이를 바탕으로 한 혁신적인 아이디어 제안 (3-4개)
-        3. 실현 가능한 실행 방안 (2-3줄)
-        아이디어는 구체적이고 실현 가능하면서도 창의적이어야 합니다."""},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt}
     ]
     
@@ -70,7 +74,7 @@ def generate_innovative_conclusion(topic: str, conversation_history: List[str]) 
         response = client.chat.completions.create(
             model="gpt-4",
             messages=messages,
-            max_tokens=1000,
+            max_tokens=800,
             temperature=0.8
         )
         
@@ -112,6 +116,21 @@ def create_message_container(role: str, message: str):
             unsafe_allow_html=True
         )
 
+def create_round_separator(round_number: int):
+    """라운드 구분선과 헤더를 생성합니다."""
+    st.markdown(
+        f"""
+        <div style="
+            margin: 30px 0 20px 0;
+            padding: 10px 0;
+            border-top: 2px solid #e0e0e0;
+        ">
+            <h3 style="color: #1976D2; margin: 10px 0;">🔄 라운드 {round_number}</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 def main():
     st.title("💡 AI 아이디어 발굴 시스템")
     st.markdown("### 분석가와 실무자의 대화를 통한 혁신적인 아이디어 도출")
@@ -128,39 +147,58 @@ def main():
         st.session_state.current_round = 0
         st.session_state.is_processing = False
     
-    # 에이전트 초기화
+    # 에이전트 초기화 시 temperature 설정
     analyst = AIAgent(
         "분석가", 
         """당신은 데이터와 트렌드를 깊이 있게 분석하는 전문가입니다.
         시장 동향, 소비자 행동, 기술 트렌드 등을 종합적으로 분석하여 인사이트를 도출합니다.
-        항상 데이터에 기반한 객관적인 의견을 제시하되, 미래 가능성도 고려합니다."""
+        항상 데이터에 기반한 객관적인 의견을 제시하되, 미래 가능성도 고려합니다.""",
+        temperature=0.3  # 낮은 temperature로 더 일관되고 논리적인 응답 유도
     )
     
     practitioner = AIAgent(
         "실무자", 
         """당신은 현장 경험이 풍부한 실무 전문가입니다.
         실제 적용 가능성, 자원 효율성, 실행 시의 문제점 등을 고려합니다.
-        현실적인 제약사항을 고려하되, 혁신적인 해결방안을 선호합니다."""
+        현실적인 제약사항을 고려하되, 혁신적인 해결방안을 선호합니다.""",
+        temperature=0.7  # 높은 temperature로 더 창의적이고 다양한 관점의 응답 유도
     )
     
     # 주제 입력
-    topic = st.text_input("탐구할 주제나 해결할 문제를 입력하세요:", "미래의 스마트 시티 설계")
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        topic = st.text_input("탐구할 주제나 해결할 문제를 입력하세요:", "미래의 스마트 시티 설계")
+    
+    # 아이디어 생성 방향 설정
+    with st.expander("🎯 아이디어 생성 방향 설정", expanded=True):
+        custom_prompt = st.text_area(
+            "아이디어 생성을 위한 구체적인 방향을 설정하세요:",
+            """당신은 혁신적인 아이디어를 도출하는 전문가입니다.
+분석가와 실무자의 대화를 종합하여 다음과 같은 결과물을 도출해주세요:
+1. 대화에서 발견된 핵심 인사이트 (2-3줄)
+2. 이를 바탕으로 한 혁신적인 아이디어 제안 (3-4개)
+3. 실현 가능한 실행 방안 (2-3줄)
+아이디어는 구체적이고 실현 가능하면서도 창의적이어야 합니다.""",
+            height=200
+        )
+        st.info("💡 프롬프트를 수정하여 원하는 방향의 아이디어를 생성하도록 설정할 수 있습니다.")
     
     # 새로운 주제로 시작하기 버튼
-    if st.button("새로운 주제로 시작하기"):
-        st.session_state.started = False
-        st.session_state.conversation_history = []
-        st.session_state.current_round = 0
-        st.session_state.is_processing = False
-        st.rerun()
+    with col2:
+        if st.button("새로운 주제로 시작하기"):
+            st.session_state.started = False
+            st.session_state.conversation_history = []
+            st.session_state.current_round = 0
+            st.session_state.is_processing = False
+            st.rerun()
 
     # 대화 시작 버튼
-    if not st.session_state.started and st.button("대화 시작"):
+    if not st.session_state.started and st.button("대화 시작", type="primary"):
         st.session_state.started = True
         st.session_state.is_processing = True
         st.rerun()
     
-    # 대화 진행
+    # 대화 진행 (이전 코드와 동일하게 유지하되, conclusion 생성 시 custom_prompt 전달)
     if st.session_state.started:
         # 진행 상태 표시
         progress_bar = st.progress(0)
@@ -173,22 +211,32 @@ def main():
             
             status_text.text(f"라운드 {st.session_state.current_round + 1} 진행 중...")
             
-            with st.container():
-                st.markdown(f"#### 라운드 {st.session_state.current_round + 1}")
-                
-                # 분석가의 응답
-                with st.spinner('분석가가 응답을 생성 중입니다...'):
-                    response_analyst = analyst.generate_response(
-                        topic, 
-                        st.session_state.conversation_history[-1] if st.session_state.conversation_history else ""
-                    )
-                    create_message_container("분석가", response_analyst)
-                    st.session_state.conversation_history.append(response_analyst)                
-
-                with st.spinner('실무자가 응답을 생성 중입니다...'):
-                    response_practitioner = practitioner.generate_response(topic, response_analyst)
-                    create_message_container("실무자", response_practitioner)
-                    st.session_state.conversation_history.append(response_practitioner)                
+            # 이전 라운드들의 내용을 먼저 표시
+            for past_round in range(st.session_state.current_round):
+                create_round_separator(past_round + 1)
+                past_analyst = st.session_state.conversation_history[past_round * 2]
+                past_practitioner = st.session_state.conversation_history[past_round * 2 + 1]
+                create_message_container("분석가", past_analyst)
+                create_message_container("실무자", past_practitioner)
+            
+            # 현재 라운드 표시
+            create_round_separator(st.session_state.current_round + 1)
+            
+            # 분석가의 응답
+            with st.spinner('분석가가 응답을 생성 중입니다...'):
+                response_analyst = analyst.generate_response(
+                    topic, 
+                    st.session_state.conversation_history[-1] if st.session_state.conversation_history else ""
+                )
+                create_message_container("분석가", response_analyst)
+                st.session_state.conversation_history.append(response_analyst)
+            
+            # 실무자의 응답
+            with st.spinner('실무자가 응답을 생성 중입니다...'):
+                response_practitioner = practitioner.generate_response(topic, response_analyst)
+                create_message_container("실무자", response_practitioner)
+                st.session_state.conversation_history.append(response_practitioner)
+            
             st.session_state.current_round += 1
             time.sleep(1)  # UI 업데이트를 위한 짧은 대기
             
@@ -204,7 +252,11 @@ def main():
             st.markdown("### 🚀 혁신적 아이디어 도출")
             
             with st.spinner('최종 결론을 도출하고 있습니다...'):
-                conclusion = generate_innovative_conclusion(topic, st.session_state.conversation_history)
+                conclusion = generate_innovative_conclusion(
+                    topic, 
+                    st.session_state.conversation_history,
+                    custom_prompt
+                )
                 
                 # 결론을 섹션별로 나누어 표시
                 sections = conclusion.split('\n\n')

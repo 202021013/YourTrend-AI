@@ -25,10 +25,10 @@ class AIAgent:
         self.client = OpenAI()
         self.conversation_history: List[Dict] = []
         
-    def generate_response(self, topic: str, other_response: str = "") -> str:
+    def generate_response(self, topic: str, conversation_history: List[str], custom_prompt: str, other_response: str = "") -> str:
         messages = [
-            {"role": "system", "content": f"{self.name}: {self.role}"},
-            {"role": "user", "content": f"{topic[:3000]}"}
+            {"role": "system", "content": custom_prompt[:1000]},
+            {"role": "user", "content": f"주제: {topic}\n요약된 대화:\n" + "\n".join([f"요약 {idx}: {msg[:500]}" for idx, msg in enumerate(conversation_history, 1)])[:2000]}
         ]
         
         if len(self.conversation_history) > 4:
@@ -46,7 +46,7 @@ class AIAgent:
             response = self.client.chat.completions.create(
                 model="gpt-4",
                 messages=messages,
-                max_tokens=800,
+                max_tokens=1200,
                 temperature=self.temperature
             )
             
@@ -72,181 +72,126 @@ def summarize_transcript(transcript: str, max_chars: int = 2000) -> str:
     summarized = '. '.join(first_part + ['...'] + last_part)
     return summarized.strip()
 
-def generate_idea(transcript: str, video_urls: List[str], user_prompt: str):
+def generate_idea(transcripts, video_urls, user_prompt):
     try:
-        # 스크립트 요약
-        summarized_transcript = summarize_transcript(transcript, max_chars=3000)
+        # 입력 데이터 준비
+        summarized_transcripts = [summarize_transcript(transcript) for transcript in transcripts]
         
+        combined_input = "".join([
+            f"\n[영상 {i}] URL: {url}\n===== 요약된 스크립트 =====\n{transcript}\n{'-' * 30}\n"
+            for i, (transcript, url) in enumerate(zip(summarized_transcripts, video_urls), 1)
+        ])
+
         context = f"""
-분석할 콘텐츠 요약:
-{summarized_transcript}
-
-참고한 영상 URL:
-{', '.join(video_urls)}
-
-사용자 요구사항:
+분석 요구사항:
 {user_prompt}
+
+분석할 콘텐츠:
+{combined_input}
 """
 
+        # AI 에이전트 초기화
         analyst = AIAgent(
-            "콘텐츠 분석가", 
-            """유튜브 콘텐츠와 시장 트렌드를 분석하는 전문가입니다. 다음 역할을 수행합니다:
-            1. 제공된 영상 콘텐츠의 핵심 요소와 트렌드 파악
-            2. 시청자 반응과 시장 잠재력 분석
-            3. 콘텐츠의 차별화 요소와 개선점 도출
-            4. 새로운 기회 영역 발굴""",
-            temperature=0.3  # 더 논리적이고 일관된 응답을 위해 낮은 temperature 설정
+            "분석가",
+            """당신은 콘텐츠 분석 전문가입니다. 주어진 영상 내용을 깊이 있게 분석하고, 
+            핵심 인사이트를 도출하여 프로젝트 아이디어의 기반을 마련해주세요. 
+            각 라운드마다 이전 대화를 고려하여 더 깊이 있는 분석을 제공해주세요.""",
+            temperature=0.3
         )
         
         practitioner = AIAgent(
-            "사업 전략가", 
-            """비즈니스 전략과 실행을 담당하는 전문가입니다. 다음 역할을 수행합니다:
-            1. 분석가의 인사이트를 실현 가능한 사업 아이디어로 구체화
-            2. 실제 구현을 위한 기술적/비즈니스적 요소 제시
-            3. 위험 요소 분석과 해결방안 도출
-            4. 수익화 전략과 실행 계획 수립""",
-            temperature=0.7  # 더 창의적인 제안을 위해 높은 temperature 설정
+            "실무자",
+            """당신은 프로젝트 실무 전문가입니다. 분석가의 인사이트를 바탕으로 
+            실현 가능한 구체적인 프로젝트 아이디어를 제시해주세요. 
+            각 라운드마다 이전 피드백을 반영하여 아이디어를 발전시켜주세요.""",
+            temperature=0.7
         )
+
+        conversation_history = []
         
-        conversation_logs = []
-        
-        # 라운드 1: 초기 분석과 기회 발굴
-        create_round_separator(1)
-        st.markdown("#### 🎯 라운드 1: 초기 분석과 기회 발굴")
-        
-        # 분석가의 초기 분석
-        with st.spinner('분석가가 콘텐츠를 분석하고 있습니다...'):
-            analyst_response = analyst.generate_response(f"""
-주어진 콘텐츠를 분석하여 다음 사항들을 도출해주세요:
+        for round_num in range(3):
+            create_round_separator(round_num + 1)
+            
+            # 라운드별 프롬프트 설정
+            if round_num == 0:
+                analyst_prompt = f"주어진 콘텐츠를 분석하고 주요 인사이트와 기회 영역을 도출해주세요:\n{context}"
+                practitioner_prompt = "분석가의 인사이트를 바탕으로 실현 가능한 프로젝트 아이디어를 제안해주세요."
+            elif round_num == 1:
+                analyst_prompt = "이전 라운드의 아이디어를 검토하고, 보완이 필요한 부분과 추가적인 기회 영역을 제시해주세요."
+                practitioner_prompt = "분석가의 피드백을 반영하여 기존 아이디어를 발전시키거나 새로운 아이디어를 제안해주세요."
+            else:
+                analyst_prompt = "지금까지의 논의를 종합하여 최종적인 관점과 추천사항을 제시해주세요."
+                practitioner_prompt = "최종 분석을 바탕으로 가장 유망한 프로젝트 아이디어를 구체화하여 제시해주세요."
 
-1. 핵심 주제와 트렌드
-- 영상의 주요 내용과 시장 트렌드
-- 시청자들의 관심사와 반응
-- 현재 시장의 기회와 과제
+            # 분석가의 분석
+            with st.spinner('분석가가 응답을 생성 중입니다...'):
+                response_analyst = analyst.generate_response(
+                    analyst_prompt + "\n\n" + "\n".join(conversation_history[-2:] if conversation_history else [])
+                )
+                response_ana = analyst.generate_response(
+                    topic=analyst_prompt, 
+                    conversation_history=conversation_history[-2:] if conversation_history else [],
+                    custom_prompt=analyst_prompt
+                )
+                create_message_container("분석가", response_analyst)
+                conversation_history.append(response_analyst)
+            
+            # 실무자의 아이디어 제안
+            with st.spinner('실무자가 응답을 생성 중입니다...'):
+                response_practitioner = practitioner.generate_response(
+                    practitioner_prompt + "\n\n분석가의 의견:\n" + response_analyst
+                )
+                create_message_container("실무자", response_practitioner)
+                conversation_history.append(response_practitioner)
 
-2. 콘텐츠 차별화 요소
-- 독특한 접근 방식과 강점
-- 경쟁 콘텐츠 대비 장점
-- 시청자 호응도가 높은 요소
+        # 최종 아이디어 생성
+        final_prompt = f"""
+주어진 요구사항과 3라운드에 걸친 분석 및 논의를 바탕으로 최종 프로젝트 아이디어를 다음 형식에 맞춰 제시해주세요:
 
-3. 시장 기회
-- 충족되지 않은 시청자 니즈
-- 새로운 콘텐츠 가능성
-- 수익화 기회
+1. 프로젝트 개요
+2. 세부 구현 방안
+3. 차별화 포인트
+4. 수익화 전략
+5. 개발 로드맵
 
-4. 예상 과제
-- 기술적/운영적 어려움
-- 시장 진입 장벽
-- 경쟁 위협
+요구사항: {user_prompt}
 
-분석 내용: {context}
-""")
-            create_message_container("분석가", analyst_response)
-            conversation_logs.append(analyst_response)
-        
-        # 실무자의 초기 전략 수립
-        with st.spinner('전략가가 사업 구상을 하고 있습니다...'):
-            practitioner_response = practitioner.generate_response(
-                context,
-                f"""분석가의 의견을 바탕으로 구체적인 사업 전략을 제시해주세요:
+분석 내용 요약:
+{'. '.join([conv[:300] for conv in conversation_history])}
+"""
 
-1. 사업 모델
-- 핵심 가치
-- 목표 고객
-- 수익 모델
-
-2. 차별화 전략
-- 경쟁 우위 요소
-- 시장 진입 전략
-- 브랜딩 방안
-
-3. 실행 계획
-- 필요 자원
-- 주요 단계
-- 일정과 예산
-
-4. 리스크 관리
-- 주요 위험 요소
-- 대응 방안
-- 성과 지표
-
-분석가의 의견: {analyst_response}"""
+        with st.spinner('최종 아이디어를 생성하고 있습니다...'):
+            final_idea = generate_innovative_conclusion(
+                user_prompt,
+                conversation_history,
+                final_prompt
             )
-            create_message_container("전략가", practitioner_response)
-            conversation_logs.append(practitioner_response)
-
-        # 이하 라운드 2, 3 생략...
-
-        # 최종 결론 도출
-        final_conclusion = generate_innovative_conclusion(
-            user_prompt,
-            conversation_logs,
-            "최종 결론 도출"
-        )
-        
-        return context, final_conclusion
+            
+        return final_idea, combined_input
 
     except Exception as e:
         st.error(f"아이디어 생성 중 오류 발생: {str(e)}")
-        return None, None
+        return "", ""
 
 def generate_innovative_conclusion(topic: str, conversation_history: List[str], custom_prompt: str) -> str:
     client = OpenAI()
     
     conversation_text = "\n".join([
-        f"대화 내용 {idx}: {msg[:500]}" 
+        f"요약 {idx}: {msg[:500]}" 
         for idx, msg in enumerate(conversation_history, 1)
     ])
     
-    conclusion_prompt = f"""
-당신은 혁신적인 프로젝트 아이디어를 평가하고 제안하는 전문가입니다.
-분석가와 실무자의 대화를 기반으로, 다음 구조에 따라 최종 결론을 도출해주세요:
-
-1. 핵심 아이디어 (Core Idea)
-   - 제안하는 프로젝트의 핵심 개념과 목적
-   - 해결하고자 하는 구체적인 문제나 기회
-
-2. 아이디어 도출 근거 (Supporting Evidence)
-   - 분석된 영상 콘텐츠에서 발견된 핵심 인사이트
-   - 시장 트렌드와의 연관성
-   - 기존 솔루션과의 차별점
-
-3. 아이디어의 가치 (Value Proposition)
-   - 사용자/고객에게 제공하는 핵심 가치
-   - 시장에서의 경쟁 우위
-   - 잠재적 영향력과 확장 가능성
-
-4. 실현 가능성 (Feasibility)
-   - 기술적 구현 가능성
-   - 필요한 핵심 자원과 역량
-   - 예상되는 도전과제와 해결 방안
-
-5. 수익화 및 지속가능성 (Sustainability)
-   - 구체적인 수익 모델
-   - 초기 진입 전략
-   - 장기적 성장 방안
-
-결론 작성 시 주의사항:
-1. 각 섹션에서 주장하는 내용에 대한 구체적인 근거를 함께 제시
-2. 분석가와 실무자의 대화에서 도출된 인사이트를 적극 활용
-3. 실제 실행 가능한 수준의 구체성 유지
-4. 제안의 강점과 잠재적 약점을 균형있게 서술
-
-주제: {topic}
-
-대화 내용 요약:
-{conversation_text}
-"""
+    messages = [
+        {"role": "system", "content": custom_prompt[:1000]},
+        {"role": "user", "content": f"주제: {topic}\n요약된 대화:\n{conversation_text[:2000]}"}
+    ]
     
     try:
         response = client.chat.completions.create(
             model="gpt-4",
-            messages=[
-                {"role": "system", "content": conclusion_prompt},
-                {"role": "user", "content": f"위 내용을 바탕으로 최종 프로젝트 제안을 작성해주세요."}
-            ],
-            max_tokens=1500,
-            temperature=0.7
+            messages=messages,
+            max_tokens=1200,
+            temperature=0.8
         )
         
         return response.choices[0].message.content.strip()

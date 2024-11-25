@@ -108,7 +108,7 @@ def generate_idea(transcripts, video_urls, user_prompt):
         for round_num in range(3):
             create_round_separator(round_num + 1)
             
-            with st.spinner('분석가가 응답�� 생성 중입니다...'):
+            with st.spinner('분석가가 응답을 생성 중입니다...'):
                 response_analyst = analyst.generate_response(
                     context[:3000],  
                     conversation_history[-1][:1000] if conversation_history else ""

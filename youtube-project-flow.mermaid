@@ -1,0 +1,46 @@
+flowchart TD
+    Start([시작]) --> Trends[Google 트렌드 데이터 로드]
+    Trends --> SearchPhase[영상 검색 단계]
+    
+    %% 검색 단계
+    SearchPhase --> InputSearch[검색어 입력]
+    InputSearch --> FilterOptions[필터 설정<br/>- 영상 길이<br/>- 정렬 기준]
+    FilterOptions --> SearchResults[검색 결과 표시]
+    
+    %% 영상 선택 단계
+    SearchResults --> SelectVideos[영상 선택]
+    SelectVideos --> CheckSelection{선택된 영상이<br/>있는가?}
+    CheckSelection -->|No| SearchPhase
+    CheckSelection -->|Yes| ProcessSelection[선택된 영상 처리]
+    
+    %% 영상 처리 단계
+    ProcessSelection --> ParallelProcess[병렬 처리]
+    ParallelProcess --> DownloadAudio[오디오 다운로드]
+    ParallelProcess --> ExtractText[텍스트 추출<br/>Whisper 모델]
+    
+    %% AI 분석 단계
+    DownloadAudio & ExtractText --> AIAnalysis[AI 분석 시작]
+    AIAnalysis --> Analyst[분석가 AI<br/>콘텐츠 분석]
+    Analyst --> Practitioner[실무자 AI<br/>실행 방안 제시]
+    
+    %% 아이디어 생성 단계
+    Analyst & Practitioner --> GenerateFinal[최종 아이디어 생성]
+    GenerateFinal --> FormatIdea[아이디어 포맷팅<br/>1. 프로젝트 개요<br/>2. 세부 구현 방안<br/>3. 차별화 포인트<br/>4. 수익화 전략<br/>5. 개발 로드맵]
+    
+    %% 결과 저장 및 표시
+    FormatIdea --> SaveDB[데이터베이스 저장]
+    SaveDB --> DisplayResult[결과 표시]
+    
+    %% 새 프로젝트 시작 옵션
+    DisplayResult --> NewProject{새 프로젝트<br/>시작?}
+    NewProject -->|Yes| Start
+    NewProject -->|No| End([종료])
+
+    %% 스타일링
+    classDef process fill:#e1f3fe,stroke:#04a7fb,stroke-width:2px
+    classDef decision fill:#fff4e5,stroke:#ffa726,stroke-width:2px
+    classDef start_end fill:#e8f5e9,stroke:#4caf50,stroke-width:2px
+    
+    class SearchPhase,InputSearch,FilterOptions,ProcessSelection,AIAnalysis,GenerateFinal,FormatIdea process
+    class CheckSelection,NewProject decision
+    class Start,End start_end

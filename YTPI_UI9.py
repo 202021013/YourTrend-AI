@@ -181,7 +181,7 @@ def download_audio(video_url: str) -> str:
 def transcribe_audio(audio_path: str) -> str:
     """오디오 파일을 텍스트로 변환"""
     try:
-        model = whisper.load_model("base")
+        model = whisper.load_model("medium")
         result = model.transcribe(audio_path)
         return result["text"]
         
@@ -198,8 +198,9 @@ class AIAgent:
         self.client = OpenAI()
         self.conversation_history: List[Dict] = []
         
-    def generate_response(self, topic: str, other_response: str = "", context: str = "") -> str:
-        prompt = f"""
+    def generate_response(self, topic: str, other_response: str = "", context: str = "", round_num: int = 1) -> str:
+        if round_num == 1:
+            prompt = f"""
 당신은 {self.name}이며, {self.role}입니다.
 성격과 말투: {self.personality}
 
@@ -208,24 +209,27 @@ class AIAgent:
 분석할 콘텐츠:
 {context}
 
-이전 대화:
-{self.format_conversation_history()}
-
-다른 참여자의 의견:
-{other_response}
-
-위 내용을 바탕으로 당신의 관점에서 다음 형식으로 의견을 제시해주세요:
-
+다음 형식으로 의견을 제시해주세요:
 1. 현재 상황 분석
 2. 기회 요소 발견
 3. 해결 방안 제시
 4. 구체적 실행 계획
 5. 예상되는 도전 과제
 """
-        
+        else:
+            prompt = f"""
+당신은 {self.name}이며, {self.role}입니다.
+성격과 말투: {self.personality}
+
+이전 대화:
+{other_response}
+
+위 내용에 대한 짧은 피드백과 제안을 200자 이내로 제시해주세요.
+"""
+    
         messages = [
             {"role": "system", "content": prompt},
-            {"role": "user", "content": f"{topic[:3000]}"}
+            {"role": "user", "content": f"{topic[:1000]}"}
         ]
         
         if len(self.conversation_history) > 6:
@@ -237,7 +241,7 @@ class AIAgent:
             response = self.client.chat.completions.create(
                 model="gpt-4",
                 messages=messages,
-                max_tokens=1000,
+                max_tokens=200 if round_num > 1 else 1000,
                 temperature=self.temperature
             )
             
@@ -245,7 +249,7 @@ class AIAgent:
             self.conversation_history.append({"role": "assistant", "content": generated_response})
             
             return generated_response
-            
+        
         except Exception as e:
             return f"응답 생성 중 오류 발생: {str(e)}"
             
@@ -261,34 +265,31 @@ def generate_discussion(transcripts: List[str], video_urls: List[str], user_prom
         name="시장분석가",
         role="시장 트렌드와 사용자 니즈 분석 전문가",
         temperature=0.7,
-        personality="데이터 기반의 객관적인 분석을 제공하며, 시장의 기회와 위험 요소를 파악합니다. 논리적이고 체계적인 접근을 선호합니다."
+        personality="데이터 기반의 객관적인 분석을 제공하며, 시장의 기회와 위험 요소를 파악합니다."
     )
     
     product_manager = AIAgent(
         name="프로덕트 매니저",
         role="제품 기획 및 전략 수립 전문가",
         temperature=0.8,
-        personality="사용자 중심적 사고와 비즈니스 가치를 균형있게 고려합니다. 실현 가능한 로드맵을 제시하고 우선순위를 결정합니다."
+        personality="사용자 중심적 사고와 비즈니스 가치를 균형있게 고려합니다."
     )
     
     tech_lead = AIAgent(
         name="테크리드",
         role="기술 구현 및 아키텍처 설계 전문가",
         temperature=0.7,
-        personality="최신 기술 트렌드를 이해하고 실제 구현 가능성을 평가합니다. 기술적 제약사항과 해결방안을 제시합니다."
+        personality="최신 기술 트렌드를 이해하고 실제 구현 가능성을 평가합니다."
     )
     
     business_strategist = AIAgent(
         name="사업전략가",
         role="비즈니스 모델 및 수익화 전략 전문가",
         temperature=0.8,
-        personality="시장성과 수익성을 고려한 사업 전략을 수립합니다. 경쟁사 분석과 차별화 전략을 제시합니다."
+        personality="시장성과 수익성을 고려한 사업 전략을 수립합니다."
     )
 
-    # 컨텍스트 생성
     context = create_context(transcripts, video_urls)
-    
-    # 토론 진행
     conversation = []
     agents = [analyst, product_manager, tech_lead, business_strategist]
     rounds = 3
@@ -300,10 +301,16 @@ def generate_discussion(transcripts: List[str], video_urls: List[str], user_prom
             with st.spinner(f'{agent.name}의 의견을 분석 중...'):
                 other_responses = "\n\n".join([
                     f"{msg['agent']}: {msg['response']}"
-                    for msg in conversation[-3:] if msg['agent'] != agent.name
+                    for msg in conversation[-4:] if msg['agent'] != agent.name
                 ])
                 
-                response = agent.generate_response(user_prompt, other_responses, context)
+                response = agent.generate_response(
+                    user_prompt, 
+                    other_responses, 
+                    context,
+                    round_num + 1
+                )
+                
                 conversation.append({
                     "agent": agent.name,
                     "response": response,
@@ -319,7 +326,6 @@ def generate_discussion(transcripts: List[str], video_urls: List[str], user_prom
         """, unsafe_allow_html=True)
     
     final_summary = generate_final_summary(conversation, user_prompt)
-    
     return final_summary, conversation
 
 def display_message(agent_name: str, message: str):
@@ -425,13 +431,14 @@ def create_context(transcripts: List[str], video_urls: List[str]) -> str:
 def init_db():
     conn = sqlite3.connect('project_ideas.db')
     c = conn.cursor()
+    c.execute('DROP TABLE IF EXISTS ideas')
     c.execute('''
-        CREATE TABLE IF NOT EXISTS ideas (
+        CREATE TABLE ideas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            video_urls TEXT,
-            conversation_history TEXT,
-            final_summary TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            title TEXT NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            conversation_history TEXT
         )
     ''')
     conn.commit()

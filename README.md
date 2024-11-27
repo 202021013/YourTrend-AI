@@ -20,13 +20,8 @@
     ```
 
 ## .env 파일     
-    YOUTUBE_API_KEY='YOUR_YOUTUBE_API_KEY'
     OPENAI_API_KEY='YOUR_OPENAI_API_KEY'
-    llm_api_key='YOUR_OPENAI_API_KEY'
-    SPEECH_JSON_PATH='YOUR_SPEECH_JSON_PATH'
-    BUCKET_NAME='YOUR_BUCKET_NAME'
-    GCS_JSON_PATH='YOUR_GCS_JSON_PATH'
-    
+   
     
 #### 주의사항
 - `.env` 파일은 **절대로** Git에 커밋하지 마세요. 민감한 정보를 보호하기 위해 `.gitignore` 파일에 `.env`를 추가하는 것을 잊지 마세요.

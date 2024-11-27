@@ -22,7 +22,10 @@
 ## .env 파일     
     OPENAI_API_KEY='YOUR_OPENAI_API_KEY'
    
-    
+## streamlit run
+    ```bash
+    streamlit run YTPI_UI
+    ```    
 #### 주의사항
 - `.env` 파일은 **절대로** Git에 커밋하지 마세요. 민감한 정보를 보호하기 위해 `.gitignore` 파일에 `.env`를 추가하는 것을 잊지 마세요.
 - 필요한 값들을 적절히 수정하여 환경에 맞게 설정하세요.

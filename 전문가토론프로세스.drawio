@@ -1,0 +1,109 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" version="24.9.1">
+  <diagram name="페이지-1" id="KqKXvroNY2i5acNMVEt8">
+    <mxGraphModel dx="2577" dy="928" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="bkdEYVS7VGPaIfsEwE2J-6" target="bkdEYVS7VGPaIfsEwE2J-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-20" value="결론 도출" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="140" y="715" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-25" value="전문가 토론 프로세스" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="-200" y="350" width="480" height="340" as="geometry" />
+        </mxCell>
+        <mxCell id="ZBwBNimGMsOpnCpCP76t-1" value="round1" style="swimlane;whiteSpace=wrap;html=1;startSize=23;" parent="bkdEYVS7VGPaIfsEwE2J-25" vertex="1">
+          <mxGeometry x="10" y="30" width="140" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="ZBwBNimGMsOpnCpCP76t-2" value="시장분석가" style="rounded=1;whiteSpace=wrap;html=1;" parent="ZBwBNimGMsOpnCpCP76t-1" vertex="1">
+          <mxGeometry x="10" y="30" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ZBwBNimGMsOpnCpCP76t-3" value="프로덕트 매니저" style="rounded=1;whiteSpace=wrap;html=1;" parent="ZBwBNimGMsOpnCpCP76t-1" vertex="1">
+          <mxGeometry x="10" y="100" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ZBwBNimGMsOpnCpCP76t-4" value="테크리드" style="rounded=1;whiteSpace=wrap;html=1;" parent="ZBwBNimGMsOpnCpCP76t-1" vertex="1">
+          <mxGeometry x="10" y="170" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ZBwBNimGMsOpnCpCP76t-5" value="사업 전략가" style="rounded=1;whiteSpace=wrap;html=1;" parent="ZBwBNimGMsOpnCpCP76t-1" vertex="1">
+          <mxGeometry x="10" y="240" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-1" value="round2" style="swimlane;whiteSpace=wrap;html=1;startSize=23;" vertex="1" parent="bkdEYVS7VGPaIfsEwE2J-25">
+          <mxGeometry x="170" y="30" width="140" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="bkdEYVS7VGPaIfsEwE2J-1" source="bkdEYVS7VGPaIfsEwE2J-2" target="bkdEYVS7VGPaIfsEwE2J-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-2" value="시장분석가" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="bkdEYVS7VGPaIfsEwE2J-1">
+          <mxGeometry x="10" y="30" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="bkdEYVS7VGPaIfsEwE2J-1" source="bkdEYVS7VGPaIfsEwE2J-3" target="bkdEYVS7VGPaIfsEwE2J-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-3" value="프로덕트 매니저" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="bkdEYVS7VGPaIfsEwE2J-1">
+          <mxGeometry x="10" y="100" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="bkdEYVS7VGPaIfsEwE2J-1" source="bkdEYVS7VGPaIfsEwE2J-4" target="bkdEYVS7VGPaIfsEwE2J-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-4" value="테크리드" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="bkdEYVS7VGPaIfsEwE2J-1">
+          <mxGeometry x="10" y="170" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-5" value="사업 전략가" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="bkdEYVS7VGPaIfsEwE2J-1">
+          <mxGeometry x="10" y="240" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-6" value="round3" style="swimlane;whiteSpace=wrap;html=1;startSize=23;" vertex="1" parent="bkdEYVS7VGPaIfsEwE2J-25">
+          <mxGeometry x="330" y="30" width="140" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="bkdEYVS7VGPaIfsEwE2J-6" source="bkdEYVS7VGPaIfsEwE2J-7" target="bkdEYVS7VGPaIfsEwE2J-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-7" value="시장분석가" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="bkdEYVS7VGPaIfsEwE2J-6">
+          <mxGeometry x="10" y="30" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="bkdEYVS7VGPaIfsEwE2J-6" source="bkdEYVS7VGPaIfsEwE2J-8" target="bkdEYVS7VGPaIfsEwE2J-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-8" value="프로덕트 매니저" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="bkdEYVS7VGPaIfsEwE2J-6">
+          <mxGeometry x="10" y="100" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="bkdEYVS7VGPaIfsEwE2J-6" source="bkdEYVS7VGPaIfsEwE2J-9" target="bkdEYVS7VGPaIfsEwE2J-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-9" value="테크리드" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="bkdEYVS7VGPaIfsEwE2J-6">
+          <mxGeometry x="10" y="170" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-10" value="사업 전략가" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="bkdEYVS7VGPaIfsEwE2J-6">
+          <mxGeometry x="10" y="240" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="bkdEYVS7VGPaIfsEwE2J-25" source="ZBwBNimGMsOpnCpCP76t-1" target="bkdEYVS7VGPaIfsEwE2J-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="bkdEYVS7VGPaIfsEwE2J-25" source="bkdEYVS7VGPaIfsEwE2J-1" target="bkdEYVS7VGPaIfsEwE2J-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-27" value="" style="endArrow=none;dashed=1;html=1;rounded=0;" edge="1" parent="1" target="bkdEYVS7VGPaIfsEwE2J-29">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="-200" y="515" as="sourcePoint" />
+            <mxPoint x="-200" y="480" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-29" value="스크립트, user prompt 기반 각각의 아이디어 생성&amp;nbsp;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="-380" y="500" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-35" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="bkdEYVS7VGPaIfsEwE2J-34" target="bkdEYVS7VGPaIfsEwE2J-20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-34" value="user prompt" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="7.5" y="730" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-50" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="bkdEYVS7VGPaIfsEwE2J-41" target="bkdEYVS7VGPaIfsEwE2J-25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="bkdEYVS7VGPaIfsEwE2J-41" value="API_KEY" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="-5" y="290" width="85" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

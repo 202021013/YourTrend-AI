@@ -1,6 +1,6 @@
 # ProjectAssistant
-과제도우미 유투브api로 아이디어 생성, openai api로 코드개발 및 보고서 작성
-
+유튜브 기반 아이디어 생성프로그램
+OpenAI API를 활용하여 진행했습니다.
 
 ## Conda 가상환경 실행 방법
 

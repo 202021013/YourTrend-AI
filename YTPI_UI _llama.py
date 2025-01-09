@@ -1,7 +1,7 @@
 import streamlit as st
 import whisper
 import yt_dlp
-from openai import OpenAI
+#from openai import OpenAI
 import os
 from dotenv import load_dotenv
 from youtubesearchpython import VideosSearch
@@ -69,7 +69,6 @@ class AIAgent:
         self.role = role
         self.temperature = temperature
         self.personality = personality
-        self.client = OpenAI()
         self.conversation_history: List[Dict] = []
         
     def generate_response(self, topic: str, other_response: str = "", context: str = "", round_num: int = 1) -> str:
@@ -101,25 +100,21 @@ class AIAgent:
 위 내용에 대한 짧은 피드백과 제안을 200자 이내로 제시해주세요.
 """
     
-        messages = [
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": truncate_to_complete_sentence(topic[:2000], 500)}
-        ]
-        
-        if len(self.conversation_history) > 6:
-            self.conversation_history = self.conversation_history[-6:]
-            
-        messages.extend(self.conversation_history)
-        
-        # Ollama API 호출
         try:
-            response = ollama.completions(
-                model="llama-2",  # 사용하려는 Ollama 모델
-                prompt=prompt,
-                temperature=self.temperature,
-                max_tokens=200 if round_num > 1 else 1000,
+            response = ollama.chat(
+                model="llama3.2:latest",
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": topic}
+                ],
+                stream=False,
+                options={
+                    "temperature": self.temperature,
+                    "num_predict": 200 if round_num > 1 else 1000,
+                }
             )
-            generated_response = response["choices"][0]["text"].strip()
+            
+            generated_response = response.message.content.strip()
             self.conversation_history.append({"role": "assistant", "content": generated_response})
             
             return generated_response
@@ -374,12 +369,9 @@ def generate_discussion(transcripts: List[str], video_urls: List[str], user_prom
     final_summary = generate_final_summary(conversation, user_prompt)
     return final_summary, conversation
 
-def generate_final_summary(conversation: List[dict], user_prompt: str, model: str = "gpt-3.5-turbo") -> str:
-    client = OpenAI()
-    
-    # 대화 내용 요약 최적화
+def generate_final_summary(conversation: List[dict], user_prompt: str) -> str:
     conversation_summary = "\n\n".join([
-        f"라운드 {msg['round']} - {msg['agent']}: {msg['response'][:300]}"  # 각 응답 길이 제한
+        f"라운드 {msg['round']} - {msg['agent']}: {msg['response'][:300]}"
         for msg in conversation
     ])
     
@@ -400,17 +392,24 @@ def generate_final_summary(conversation: List[dict], user_prompt: str, model: st
 """
 
     try:
-        response = client.chat.completions.create(
-            model=model,  # 선택된 모델 사용
-            messages=[{"role": "system", "content": prompt}],
-            max_tokens=1500,  # 토큰 수 감소
-            temperature=0.7
+        response = ollama.chat(
+            model="llama3.2:latest",
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            stream=False,
+            options={
+                "temperature": 0.7,
+                "num_predict": 1500,
+            }
         )
         
-        return response.choices[0].message.content.strip()
+        return response.message.content.strip()
         
     except Exception as e:
         return f"최종 요약 생성 중 오류 발생: {str(e)}"
+
 
 def generate_idea_from_videos(selected_videos: List[str], user_prompt: str):
     try:

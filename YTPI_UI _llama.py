@@ -223,36 +223,73 @@ def download_audio(video_url: str) -> str:
         st.error(f"오디오 다운로드 중 오류 발생: {str(e)}")
         return None
 
+# def transcribe_audio(audio_path: str) -> str:
+#     try:
+#         # CUDA GPU 사용 가능 여부 확인
+#         import torch
+#         device = "cuda" if torch.cuda.is_available() else "cpu"
+        
+#         if device == "cpu":
+#             st.warning("⚠️ GPU가 감지되지 않아 CPU에서 실행됩니다. 음성 인식 속도가 느릴 수 있습니다.")
+#         else:
+#             st.info("🚀 GPU를 사용하여 음성을 인식합니다.")
+        
+#         # Whisper 모델 로드 시 device 지정
+#         model = whisper.load_model("medium", device=device)
+        
+#         # GPU 메모리 최적화를 위한 설정
+#         if device == "cuda":
+#             model.to(device)
+        
+#         # transcribe 시 device 지정
+#         result = model.transcribe(
+#             audio_path,
+#             fp16=False if device == "cpu" else True  # GPU일 때만 FP16 사용
+#         )
+        
+#         return result["text"]
+        
+#     except Exception as e:
+#         st.error(f"음성 인식 중 오류 발생: {str(e)}")
+#         return None
+
 def transcribe_audio(audio_path: str) -> str:
     try:
-        # CUDA GPU 사용 가능 여부 확인
+        import platform
         import torch
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        
-        if device == "cpu":
-            st.warning("⚠️ GPU가 감지되지 않아 CPU에서 실행됩니다. 음성 인식 속도가 느릴 수 있습니다.")
+
+        # 운영 체제 확인
+        system = platform.system()
+
+        # 디바이스 설정
+        if system == "Darwin" and torch.backends.mps.is_available():
+            device = "mps"
+            st.info("🚀 macOS에서 M2 칩 GPU(MPS)를 사용하여 음성을 인식합니다.")
+        elif system == "Windows" and torch.cuda.is_available():
+            device = "cuda"
+            st.info("🚀 Windows에서 CUDA GPU를 사용하여 음성을 인식합니다.")
         else:
-            st.info("🚀 GPU를 사용하여 음성을 인식합니다.")
-        
-        # Whisper 모델 로드 시 device 지정
+            device = "cpu"
+            if system == "Darwin":
+                st.warning("⚠️ macOS에서 GPU(MPS)가 감지되지 않아 CPU에서 실행됩니다.")
+            elif system == "Windows":
+                st.warning("⚠️ Windows에서 CUDA GPU가 감지되지 않아 CPU에서 실행됩니다.")
+            else:
+                st.info("💻 지원되지 않는 운영 체제에서 CPU를 사용합니다.")
+
+        # Whisper 모델 로드
         model = whisper.load_model("medium", device=device)
-        
-        # GPU 메모리 최적화를 위한 설정
-        if device == "cuda":
-            model.to(device)
-        
-        # transcribe 시 device 지정
+
+        # transcribe 실행
         result = model.transcribe(
             audio_path,
-            fp16=False if device == "cpu" else True  # GPU일 때만 FP16 사용
+            fp16=False if device in ["cpu", "mps"] else True  # FP16 설정
         )
-        
-        return result["text"]
-        
-    except Exception as e:
-        st.error(f"음성 인식 중 오류 발생: {str(e)}")
-        return None
 
+        return result["text"]
+    except Exception as e:
+        st.error(f"오류가 발생했습니다: {e}")
+        return ""
 def create_context(transcripts: List[str], video_urls: List[str]) -> str:
     return "".join([
         f"\n[영상 {i+1}] URL: {url}\n영상 내용 요약:\n{transcript}\n{'-'*50}"

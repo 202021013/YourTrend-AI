@@ -26,7 +26,6 @@ dependencies:
   - isodate
   - pydub
   - pytube 
-  - openai-whisper
   - youtube-search-python
   - scikit-learn
   - matplotlib      

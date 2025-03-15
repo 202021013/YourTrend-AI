@@ -30,7 +30,6 @@ dependencies:
   - scikit-learn
   - matplotlib      
   - Pillow
-  - opencv-python
   - transformers
   - sentence-transformers
   - requests
